@@ -7,7 +7,5 @@ CREATE TABLE "cars"(
     "mileage_km" INTEGER NOT NULL,
     "made_year" DATE NOT NULL,
     "cost" DECIMAL(18, 2) NOT NULL,
-    "images" 
-    "created_at" TIMESTAMP default current_time,
+    "created_at" TIMESTAMP default current_timestamp
 );
-

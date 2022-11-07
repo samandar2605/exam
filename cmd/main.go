@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -20,23 +22,23 @@ func main() {
 	database := postgres.NewCars(db)
 
 	id, err := database.CreateCar(models.Cars{
-		ImageUrl:  "dang",
+		ImageUrl:  "test",
 		Marka:     "Chevrolet",
 		Model:     "Malibu",
 		Color:     "Qora",
 		MileageKm: 234567,
-		MadeYear:  time.Time{2009-11-10 23:00:00 +0000 UTC m=+0.000000001},
+		MadeYear:  time.Now(),
 		Cost:      54654654,
-		Images: []*models.Images{
+		Images: []models.Images{
 			{
 				CarsId:         1,
-				ImageUrl:       "dang",
+				ImageUrl:       "test",
 				SequenceNumber: 1,
 			},
 			{
-				CarsId:         2,
-				ImageUrl:       "bang",
-				SequenceNumber: 3,
+				CarsId:         11111,
+				ImageUrl:       "test1",
+				SequenceNumber: 2,
 			},
 		},
 	})
@@ -50,19 +52,20 @@ func main() {
 	product, err := database.ReadCar(1)
 	fmt.Println(product)
 
-	result,n, err := database.ReadCarAll(10, 1, "Malibu")
+	result, n, err := database.ReadCarAll(1, 1, "k5")
 
-	fmt.Print(result,n)
+	fmt.Print(result, n)
 
-	err=database.UpdateCar(models.Cars{
+	err = database.UpdateCar(models.Cars{
+		ID:        2,
 		ImageUrl:  "dang",
 		Marka:     "Chevrolet",
-		Model:     "Malibu",
+		Model:     "Malibuuuu",
 		Color:     "Qora",
 		MileageKm: 234567,
-		MadeYear:  time.Time{2009-11-10 23:00:00 +0000 UTC m=+0.000000001},
+		MadeYear:  time.Now(),
 		Cost:      54654654,
-		Images: []*models.Images{
+		Images: []models.Images{
 			{
 				CarsId:         1,
 				ImageUrl:       "dang",
@@ -76,13 +79,9 @@ func main() {
 		},
 	})
 
-	if err!=nil{
-		log.Fatalf("Update'da xato %v",err)
-	}
-	
-	err=database.DeleteCar(1)
-	if err!=nil{
+	err = database.DeleteCar(1)
+	if err != nil {
 		log.Fatalf("Deleteda xatolik!")
 	}
-
+	fmt.Println(err)
 }

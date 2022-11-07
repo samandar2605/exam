@@ -11,5 +11,5 @@ type Cars struct {
 	MileageKm int
 	MadeYear  time.Time
 	Cost      float64
-	Images    []*Images
+	Images    []Images
 }

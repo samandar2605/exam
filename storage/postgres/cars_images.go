@@ -45,13 +45,11 @@ func (b dbCars) CreateCar(auto models.Cars) (int, error) {
 			color,
 			mileage_km,
 			made_year,
-			cost
-		) values($1,$2,$3,$4,$5,$6,$7)
+			cost) values($1,$2,$3,$4,$5,$6,$7)
 		RETURNING id
 	`
 	var result *sql.Rows
-	result, err = tx.Query(
-		carQuery,
+	result, err = tx.Query(carQuery,
 		auto.ImageUrl,
 		auto.Marka,
 		auto.Model,
@@ -65,17 +63,18 @@ func (b dbCars) CreateCar(auto models.Cars) (int, error) {
 		tx.Rollback()
 		log.Fatalf("Error at Insert method\n%v", err)
 	}
-
-	if err = result.Scan(&carId); err != nil {
-		log.Fatalf("Error at Scanning element \n%v", err)
+	defer result.Close()
+	for result.Next() {
+		if err = result.Scan(&carId); err != nil {
+			log.Fatalf("Error at Scanning element \n%v", err)
+		}
 	}
 
 	imageQuery := `
-		INSERT INTO images(
+		INSERT INTO car_images(
 			cars_id,
 			image_url,
-			squence_number
-		) values($1,$2,$3)
+			sequence_number) values($1,$2,$3)
 	`
 
 	for _, image := range auto.Images {
@@ -97,23 +96,25 @@ func (b dbCars) CreateCar(auto models.Cars) (int, error) {
 
 func (b dbCars) ReadCar(id int) (models.Cars, error) {
 	var car models.Cars
-	car.Images = make([]*models.Images, 0)
+	car.Images = make([]models.Images, 0)
 
 	query := `
 		SELECT 
+			id,
 			image_url,
 			marka,
 			model,
 			color,
 			mileage_km,
 			made_year,
-			cost,
+			cost
 		from cars
 		where id=$1
 	`
 
-	result := b.db.QueryRow(query, id)
+	result:= b.db.QueryRow(query, id)
 	err := result.Scan(
+		&car.ID,
 		&car.ImageUrl,
 		&car.Marka,
 		&car.Model,
@@ -124,7 +125,7 @@ func (b dbCars) ReadCar(id int) (models.Cars, error) {
 	)
 
 	if err != nil {
-		log.Fatalf("error at scanning %v", err)
+		log.Fatalf("error at scanning \n%v", err)
 		return models.Cars{}, err
 	}
 
@@ -132,8 +133,9 @@ func (b dbCars) ReadCar(id int) (models.Cars, error) {
 		SELECT
 			id,
 			image_url,
+			cars_id,
 			sequence_number
-		FROM  images
+		FROM  car_images
 		WHERE cars_id=$1
 	`
 	rows, err := b.db.Query(
@@ -150,13 +152,14 @@ func (b dbCars) ReadCar(id int) (models.Cars, error) {
 		err := rows.Scan(
 			&image.ID,
 			&image.ImageUrl,
+			&image.CarsId,
 			&image.SequenceNumber,
 		)
 		if err != nil {
 			log.Fatalf("Error at scan image\n%v", err)
 			return models.Cars{}, err
 		}
-		car.Images = append(car.Images, &image)
+		car.Images = append(car.Images, image)
 	}
 
 	return car, nil
@@ -231,7 +234,7 @@ func (b dbCars) UpdateCar(crd models.Cars) error {
 			mileage_km=$5,
 			made_year=$6,
 			cost=$7
-		where id=&8
+		where id=$8
 	`
 	result, err := b.db.Exec(
 		query,
@@ -242,6 +245,7 @@ func (b dbCars) UpdateCar(crd models.Cars) error {
 		crd.MileageKm,
 		crd.MadeYear,
 		crd.Cost,
+		crd.ID,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -257,14 +261,14 @@ func (b dbCars) UpdateCar(crd models.Cars) error {
 		return sql.ErrNoRows
 	}
 
-	queryDeleteImage := `DELETE FROM images where cars_id=$1`
+	queryDeleteImage := `DELETE FROM car_images where cars_id=$1`
 	_, err = b.db.Exec(queryDeleteImage, crd.ID)
 	if err != nil {
 		return err
 	}
 
 	imageQuery := `
-		INSERT INTO images(
+		INSERT INTO car_images(
 			cars_id,
 			image_url,
 			squence_number
@@ -291,7 +295,7 @@ func (b dbCars) DeleteCar(id int) error {
 		log.Fatalf("Error at creating transaction\n%v", err)
 	}
 
-	queryDeleteImage := `DELETE FROM images where cars_id=$1`
+	queryDeleteImage := `DELETE FROM car_images where cars_id=$1`
 	_, err = tx.Exec(queryDeleteImage, id)
 	if err != nil {
 		tx.Rollback()
@@ -301,6 +305,7 @@ func (b dbCars) DeleteCar(id int) error {
 	queryDeleteCar := `DELETE FROM cars WHERE id=$1`
 	result, err := tx.Exec(queryDeleteCar, id)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 	rows, err := result.RowsAffected()
@@ -311,5 +316,6 @@ func (b dbCars) DeleteCar(id int) error {
 	if rows == 0 {
 		return sql.ErrNoRows
 	}
+	tx.Commit()
 	return nil
 }
