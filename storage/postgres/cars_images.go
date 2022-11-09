@@ -11,17 +11,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type GetCarsParams struct {
-	Limit  int
-	Page   int
-	Search string
-}
-
-type GetCarsResponse struct {
-	Cars  []models.Cars
-	Count int
-}
-
 type dbCars struct {
 	db *sql.DB
 }
