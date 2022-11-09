@@ -262,9 +262,14 @@ func (b dbCars) UpdateCar(crd models.Cars) error {
 	}
 
 	queryDeleteImage := `DELETE FROM car_images where cars_id=$1`
-	_, err = b.db.Exec(queryDeleteImage, crd.ID)
+	_, err = tx.Exec(queryDeleteImage, crd.ID)
 	if err != nil {
 		return err
+	}
+
+	if err!=nil{
+		tx.Rollback()
+		log.Fatalf("Error at delete image")
 	}
 
 	imageQuery := `
@@ -286,6 +291,7 @@ func (b dbCars) UpdateCar(crd models.Cars) error {
 			log.Fatalf("Error at Insert images\n%v", err)
 		}
 	}
+	tx.Commit()
 	return nil
 }
 
